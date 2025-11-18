@@ -1,28 +1,28 @@
 import apiClient from "./apiClient.js";
 
-const base = "/usuarios";
+const base = "/quejas";
 
-export const getUsers = async (params = {}) => {
+export const getQuejas = async (params = {}) => {
   const { data } = await apiClient.get(base, { params });
   return data;
 };
 
-export const getUserById = async (id) => {
+export const getQuejaById = async (id) => {
   const { data } = await apiClient.get(`${base}/${id}`);
   return data;
 };
 
-export const createUser = async (payload) => {
+export const createQueja = async (payload) => {
   const { data } = await apiClient.post(base, payload);
   return data;
 };
 
-export const updateUser = async (id, payload) => {
+export const updateQueja = async (id, payload) => {
   const { data } = await apiClient.put(`${base}/${id}`, payload);
   return data;
 };
 
-export const deleteUser = async (id) => {
+export const deleteQueja = async (id) => {
   const { data } = await apiClient.delete(`${base}/${id}`);
   return data;
 };

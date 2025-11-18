@@ -1,11 +1,10 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import apiClient from '../services/apiClient.js';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import apiClient from "../services/apiClient.js";
 
 const AuthContext = createContext(null);
 
-const TOKEN_KEY = 'ct_token';
-const USER_KEY = 'ct_user';
+const TOKEN_KEY = "ct_token";
+const USER_KEY = "ct_user";
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
@@ -23,14 +22,14 @@ export const AuthProvider = ({ children }) => {
       try {
         setUser(JSON.parse(storedUser));
       } catch (err) {
-        console.error('Error parseando usuario en localStorage', err);
+        console.error("Error parseando usuario en localStorage", err);
       }
     }
     setInitializing(false);
   }, []);
 
   const login = async (username, password) => {
-    const { data } = await apiClient.post('/auth/login', {
+    const { data } = await apiClient.post("/auth/login", {
       username,
       password,
     });
@@ -75,6 +74,6 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth debe usarse dentro de AuthProvider');
+  if (!ctx) throw new Error("useAuth debe usarse dentro de AuthProvider");
   return ctx;
 };

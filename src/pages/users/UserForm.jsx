@@ -1,13 +1,12 @@
-
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Input } from '../../components/common/Input.jsx';
-import { Button } from '../../components/common/Button.jsx';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Input } from "../../components/common/Input.jsx";
+import { Button } from "../../components/common/Button.jsx";
 import {
   createUser,
   getUserById,
   updateUser,
-} from '../../services/usersService.js';
+} from "../../services/usersService.js";
 
 const UserForm = () => {
   const { id } = useParams();
@@ -15,31 +14,31 @@ const UserForm = () => {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    username: '',
-    password: '',
-    rol: 'ciudadano',
+    username: "",
+    password: "",
+    rol: "ciudadano",
     estado: 1,
   });
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     const fetchUser = async () => {
-      setErrorMsg('');
+      setErrorMsg("");
       try {
         const data = await getUserById(id);
         const u = data.usuario || data.user || data;
         setForm({
-          username: u.username || '',
-          password: '',
-          rol: u.rol || 'ciudadano',
+          username: u.username || "",
+          password: "",
+          rol: u.rol || "ciudadano",
           estado: u.estado ?? 1,
         });
       } catch (error) {
         console.error(error);
         const msg =
-          error?.response?.data?.message || 'No se pudo cargar el usuario';
+          error?.response?.data?.message || "No se pudo cargar el usuario";
         setErrorMsg(msg);
       } finally {
         setLoading(false);
@@ -55,13 +54,13 @@ const UserForm = () => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: name === 'estado' ? Number(value) : value,
+      [name]: name === "estado" ? Number(value) : value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
+    setErrorMsg("");
     setSubmitting(true);
 
     try {
@@ -82,11 +81,11 @@ const UserForm = () => {
           rol: form.rol,
         });
       }
-      navigate('/usuarios');
+      navigate("/usuarios");
     } catch (error) {
       console.error(error);
       const msg =
-        error?.response?.data?.message || 'No se pudo guardar el usuario';
+        error?.response?.data?.message || "No se pudo guardar el usuario";
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
@@ -101,12 +100,12 @@ const UserForm = () => {
     <div className="max-w-lg space-y-4">
       <div>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          {isEdit ? 'Editar usuario' : 'Nuevo usuario'}
+          {isEdit ? "Editar usuario" : "Nuevo usuario"}
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           {isEdit
-            ? 'Modifica los datos del usuario seleccionado.'
-            : 'Crea un nuevo usuario con rol y credenciales.'}
+            ? "Modifica los datos del usuario seleccionado."
+            : "Crea un nuevo usuario con rol y credenciales."}
         </p>
       </div>
 
@@ -126,7 +125,7 @@ const UserForm = () => {
         />
 
         <Input
-          label={isEdit ? 'Nueva contraseña (opcional)' : 'Contraseña'}
+          label={isEdit ? "Nueva contraseña (opcional)" : "Contraseña"}
           name="password"
           type="password"
           value={form.password}
@@ -134,7 +133,7 @@ const UserForm = () => {
           required={!isEdit}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Rol
@@ -170,14 +169,14 @@ const UserForm = () => {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={submitting}>
-            {submitting ? 'Guardando...' : 'Guardar'}
+            {submitting ? "Guardando..." : "Guardar"}
           </Button>
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate('/usuarios')}
+            onClick={() => navigate("/usuarios")}
           >
             Cancelar
           </Button>

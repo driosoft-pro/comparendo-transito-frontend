@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { useAuth } from '../contexts/AuthContext.jsx';
+import React from "react";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -8,7 +7,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-        Bienvenido 👋
+        Bienvenido.
       </h2>
       <p className="text-sm text-slate-600 dark:text-slate-300">
         Hola <span className="font-semibold">{user?.username}</span>, este es el
@@ -18,11 +17,9 @@ const Dashboard = () => {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Rol
-          </p>
+          <p className="text-xs uppercase tracking-wide text-slate-400">Rol</p>
           <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
-            {user?.rol || 'No definido'}
+            {user?.rol || "No definido"}
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Los permisos de acceso dependen del rol configurado en el backend.

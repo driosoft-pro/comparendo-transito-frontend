@@ -1,7 +1,7 @@
+import axios from "axios";
 
-import axios from 'axios';
-
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const baseURL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 const apiClient = axios.create({
   baseURL,
@@ -9,7 +9,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('ct_token');
+    const token = localStorage.getItem("ct_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
