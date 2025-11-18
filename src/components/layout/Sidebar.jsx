@@ -4,22 +4,17 @@ import clsx from "clsx";
 import { Button } from "../common/Button.jsx";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: "󰨇" },
-  { to: "/usuarios", label: "Usuarios", icon: "" },
-  { to: "/perfiles", label: "Perfiles", icon: "" },
-  { to: "/vehiculos", label: "Vehículos", icon: "" },
-  { to: "/licencias", label: "Licencias", icon: "" },
-  { to: "/comparendos", label: "Comparendos", icon: "󱓥" },
-  { to: "/infracciones", label: "Infracciones", icon: "" },
-  { to: "/quejas", label: "Quejas", icon: "󰍢" },
-  { to: "/municipios", label: "Municipios", icon: "󰅆" },
+  { to: "/", label: "Dashboard", icon: "📊" },
+  { to: "/usuarios", label: "Usuarios", icon: "👥" },
+  { to: "/perfiles", label: "Perfiles", icon: "👤" },
+  { to: "/vehiculos", label: "Vehículos", icon: "🚗" },
+  { to: "/categorias-licencia", label: "Categorías de Licencia", icon: "📜" },
+  { to: "/licencias", label: "Licencias", icon: "🎫" },
+  { to: "/municipios", label: "Municipios", icon: "🏙️" },
+  { to: "/comparendos", label: "Comparendos", icon: "👮" },
+  { to: "/infracciones", label: "Infracciones", icon: "⚠️" },
+  { to: "/quejas", label: "Quejas", icon: "💬" },
 ];
-
-const linkBase =
-  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors";
-const linkInactive =
-  "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-50";
-const linkActive = "bg-primary-600 text-white shadow-sm dark:bg-primary-600";
 
 const Sidebar = ({
   isCollapsed = false,
@@ -30,82 +25,116 @@ const Sidebar = ({
   const showLabels = !isCollapsed || isMobile;
 
   return (
-    <aside className="flex h-full flex-col border-r border-slate-200 bg-white/80 p-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
-      {/* Logo + botón colapsar */}
-      <div
-        className={clsx(
-          "mb-6 flex items-center",
-          isCollapsed && !isMobile ? "justify-center" : "justify-between gap-2",
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 text-lg font-bold text-white">
-            <span>CT</span>
+    <aside className="flex h-full flex-col border-r border-slate-200 bg-white shadow-lg dark:border-slate-800 dark:bg-slate-900 md:shadow-sm">
+      {/* Header: Logo + Botón colapsar/cerrar */}
+      <div className="flex min-h-[72px] items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-slate-800">
+        <div className="flex min-w-0 items-center gap-2">
+          {/* Logo */}
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary-600 text-base font-bold text-white shadow-md">
+            CT
           </div>
+
+          {/* Título - Visible cuando no está colapsado o en móvil */}
           {showLabels && (
-            <div className="hidden md:block">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold leading-tight text-slate-900 dark:text-slate-100">
                 Comparendo Tránsito
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                 Panel admin
               </p>
             </div>
           )}
         </div>
 
-        {!isMobile && (
+        {/* Botón colapsar (desktop) o cerrar (móvil) */}
+        {isMobile ? (
           <Button
             variant="ghost"
             size="sm"
-            className="hidden md:inline-flex"
+            onClick={onCloseMobile}
+            className="flex-shrink-0"
+            title="Cerrar menú"
+          >
+            <span className="text-xl">✕</span>
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onToggleCollapse}
+            className="hidden flex-shrink-0 md:inline-flex"
             title={isCollapsed ? "Expandir menú" : "Colapsar menú"}
           >
-            <span className="text-lg">{isCollapsed ? "" : ""}</span>
+            <span className="text-base">{isCollapsed ? "→" : "←"}</span>
           </Button>
         )}
       </div>
 
       {/* Navegación */}
-      <nav className="flex-1 space-y-1 overflow-y-auto">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === "/"}
-            title={item.label} // tooltip en hover
+            title={!showLabels ? item.label : undefined}
             className={({ isActive }) =>
               clsx(
-                linkBase,
-                isCollapsed && !isMobile && "justify-center px-2",
-                !isCollapsed && "justify-start",
-                isActive ? linkActive : linkInactive,
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                // Estados normales
+                "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                "dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-50",
+                // Estado activo
+                isActive &&
+                  "bg-primary-600 text-white shadow-sm hover:bg-primary-700 dark:bg-primary-600 dark:hover:bg-primary-700",
+                // Centrado cuando está colapsado (desktop)
+                isCollapsed && !isMobile && "justify-center",
               )
             }
             onClick={() => {
-              if (isMobile && onCloseMobile) onCloseMobile();
+              if (isMobile && onCloseMobile) {
+                onCloseMobile();
+              }
             }}
           >
-            <span className="text-lg">{item.icon}</span>
+            {/* Icono */}
+            <span className="flex-shrink-0 text-lg leading-none">
+              {item.icon}
+            </span>
+
+            {/* Label - visible cuando no está colapsado o en móvil */}
             {showLabels && (
-              <span className="whitespace-nowrap">{item.label}</span>
+              <span className="truncate leading-none">{item.label}</span>
+            )}
+
+            {/* Indicador visual cuando está activo y colapsado */}
+            {isCollapsed && !isMobile && (
+              <span className="sr-only">{item.label}</span>
             )}
           </NavLink>
         ))}
       </nav>
 
-      {/* Footer versión */}
-      <div className="mt-auto border-t border-slate-200 pt-4 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+      {/* Footer: Versión e info */}
+      <div className="border-t border-slate-200 px-4 py-4 dark:border-slate-700">
         {showLabels ? (
-          <>
-            <p>v1.0.0</p>
-            <p className="mt-1">Sistema de Comparendos</p>
-          </>
+          <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">ℹ️</span>
+              <span className="font-medium">v1.0.0</span>
+            </div>
+            <p className="text-[11px] leading-tight">
+              Sistema de Comparendos de Tránsito
+            </p>
+          </div>
         ) : (
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-lg" title="Versión 1.0.0">
-              
+          <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400">
+            <span className="text-base" title="Información">
+              ℹ️
+            </span>
+            <span className="text-[10px] font-medium" title="Versión 1.0.0">
+              v1.0
             </span>
           </div>
         )}

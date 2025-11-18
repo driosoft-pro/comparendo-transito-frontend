@@ -11,7 +11,7 @@ export const ThemeToggle = () => {
       className="inline-flex items-center rounded-full border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
       tooltip={`Cambiar a modo ${theme === "dark" ? "Claro" : "Oscuro"}`}
     >
-      {theme === "dark" ? "" : ""}
+      {theme === "dark" ? "☀️" : "🌙"}
     </button>
   );
 };

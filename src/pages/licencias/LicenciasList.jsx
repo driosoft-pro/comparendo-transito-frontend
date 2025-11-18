@@ -22,7 +22,6 @@ const LicenciaForm = () => {
     organismo_transito_expedidor: "",
     estado: "ACTIVA",
     id_persona: "",
-    // usamos id_categoria, pero soportamos otros nombres al leer
     id_categoria: "",
   });
 
@@ -44,27 +43,16 @@ const LicenciaForm = () => {
           isEdit ? getLicenciaById(id) : Promise.resolve(null),
         ]);
 
-        // Usuarios (normaliza lista)
-        const usuariosList = usersResp?.usuarios || usersResp || [];
+        // Usuarios
+        const usuariosList = usersResp?.usuarios || [];
         setUsuarios(usuariosList);
 
-        // Categorías (normaliza lista)
-        const categoriasList = categoriasResp || [];
-        setCategorias(categoriasList);
+        // Categorías
+        setCategorias(categoriasResp || []);
 
         // Licencia (si es edición)
         if (isEdit && licenciaResp) {
           const l = licenciaResp.licencia || licenciaResp;
-
-          // Intentamos obtener el id de categoría desde varias posibles propiedades
-          const idCategoriaFromResponse =
-            l.id_categoria ??
-            l.id_categoria_licencia ??
-            l.id_categoria_licencia_fk ??
-            l.categoria?.id_categoria ??
-            l.categoria_licencia?.id_categoria ??
-            "";
-
           setForm({
             numero_licencia: l.numero_licencia || "",
             fecha_expedicion: l.fecha_expedicion || "",
@@ -72,7 +60,7 @@ const LicenciaForm = () => {
             organismo_transito_expedidor: l.organismo_transito_expedidor || "",
             estado: l.estado || "ACTIVA",
             id_persona: l.id_persona ?? "",
-            id_categoria: idCategoriaFromResponse,
+            id_categoria: l.id_categoria ?? "",
           });
         }
       } catch (error) {
@@ -113,7 +101,6 @@ const LicenciaForm = () => {
         organismo_transito_expedidor: form.organismo_transito_expedidor,
         estado: form.estado,
         id_persona: form.id_persona,
-        // aquí enviamos id_categoria, que es lo que espera tu tabla de categorías
         id_categoria: form.id_categoria,
       };
 
@@ -256,19 +243,8 @@ const LicenciaForm = () => {
           >
             <option value="">Seleccione una categoría</option>
             {categorias.map((c) => (
-              <option
-                key={
-                  c.id_categoria ?? c.id_categoria_licencia ?? c.id ?? c.codigo
-                }
-                value={c.id_categoria ?? c.id_categoria_licencia ?? c.id}
-              >
-                {`${c.codigo || c.codigo_categoria || "Sin código"}${
-                  c.descripcion
-                    ? " - " + c.descripcion
-                    : c.nombre
-                      ? " - " + c.nombre
-                      : ""
-                }`}
+              <option key={c.id_categoria} value={c.id_categoria}>
+                {c.codigo} - {c.descripcion}
               </option>
             ))}
           </select>

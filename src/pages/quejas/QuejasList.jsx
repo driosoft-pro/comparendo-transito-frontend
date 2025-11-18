@@ -8,7 +8,12 @@ const QuejasList = () => {
   const [quejas, setQuejas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [filterEstado, setFilterEstado] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [pageSize, setPageSize] = useState(10);
+  const pageSizeOptions = [5, 10, 15, 20];
 
   const fetchQuejas = async () => {
     try {
@@ -67,9 +72,22 @@ const QuejasList = () => {
     }
   };
 
-  const filteredQuejas = filterEstado
-    ? quejas.filter((queja) => queja.estado === filterEstado)
-    : quejas;
+  // 🔍 filtro combinado por estado + búsqueda
+  const filteredQuejas = quejas.filter((queja) => {
+    if (filterEstado && queja.estado !== filterEstado) return false;
+
+    if (!searchTerm) return true;
+    const s = searchTerm.toLowerCase();
+
+    return (
+      String(queja.id_queja)?.toLowerCase().includes(s) ||
+      String(queja.id_comparendo)?.toLowerCase().includes(s) ||
+      queja.medio_radicacion?.toLowerCase().includes(s) ||
+      queja.texto_queja?.toLowerCase().includes(s)
+    );
+  });
+
+  const paginatedQuejas = filteredQuejas.slice(0, pageSize);
 
   if (loading) {
     return (
@@ -83,6 +101,7 @@ const QuejasList = () => {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
@@ -101,26 +120,44 @@ const QuejasList = () => {
         </div>
       )}
 
-      {/* Filtros */}
+      {/* Filtros + Buscador */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Filtrar por estado:
-          </label>
-          <select
-            value={filterEstado}
-            onChange={(e) => setFilterEstado(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
-          >
-            <option value="">Todos</option>
-            <option value="RADICADA">Radicada</option>
-            <option value="EN_REVISION">En Revisión</option>
-            <option value="RESUELTA">Resuelta</option>
-            <option value="RECHAZADA">Rechazada</option>
-          </select>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Filtrar por estado:
+            </label>
+            <select
+              value={filterEstado}
+              onChange={(e) => setFilterEstado(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            >
+              <option value="">Todos</option>
+              <option value="RADICADA">Radicada</option>
+              <option value="EN_REVISION">En Revisión</option>
+              <option value="RESUELTA">Resuelta</option>
+              <option value="RECHAZADA">Rechazada</option>
+            </select>
+          </div>
+
+          <div className="w-full md:w-72">
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">
+                🔍
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar por texto, medio, ID queja o comparendo..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-9 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Tabla principal */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -150,19 +187,19 @@ const QuejasList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {filteredQuejas.length === 0 ? (
+              {paginatedQuejas.length === 0 ? (
                 <tr>
                   <td
                     colSpan="7"
                     className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
-                    {filterEstado
-                      ? "No hay quejas con ese estado"
+                    {filterEstado || searchTerm
+                      ? "No hay quejas que coincidan con el filtro"
                       : "No hay quejas registradas"}
                   </td>
                 </tr>
               ) : (
-                filteredQuejas.map((queja) => (
+                paginatedQuejas.map((queja) => (
                   <tr
                     key={queja.id_queja}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -203,9 +240,9 @@ const QuejasList = () => {
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => navigate(`/quejas/${queja.id_queja}`)}
-                          className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+                          className="text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300"
                         >
-                          Ver/Editar
+                          Editar
                         </button>
                         <button
                           onClick={() => handleDelete(queja.id_queja)}
@@ -220,6 +257,31 @@ const QuejasList = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Footer paginación */}
+        <div className="flex flex-col items-center justify-between gap-2 px-4 py-3 text-xs text-slate-500 dark:text-slate-400 sm:flex-row">
+          <span>
+            Mostrando{" "}
+            <span className="font-semibold">{paginatedQuejas.length}</span> de{" "}
+            <span className="font-semibold">{filteredQuejas.length}</span>{" "}
+            quejas
+          </span>
+          <div className="flex items-center gap-2">
+            <span>Mostrar</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
+            >
+              {pageSizeOptions.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            <span>registros</span>
+          </div>
         </div>
       </div>
 

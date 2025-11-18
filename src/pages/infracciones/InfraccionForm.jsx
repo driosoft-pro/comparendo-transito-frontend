@@ -1,143 +1,128 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Input } from '../../components/common/Input.jsx';
-import { Button } from '../../components/common/Button.jsx';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
-  createInfraccion,
   getInfraccionById,
+  createInfraccion,
   updateInfraccion,
-} from '../../services/infraccionesService.js';
+} from "../../services/infraccionesService.js";
+import { Input } from "../../components/common/Input.jsx";
+import { Button } from "../../components/common/Button.jsx";
 
 const InfraccionForm = () => {
+  const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
-  const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    codigo: '',
-    descripcion: '',
-    valor: '',
+    codigo_infraccion: "",
+    descripcion: "",
+    tipo_infraccion: "",
+    valor_base: "",
+    puntos_descuento: "",
   });
 
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    const fetchInfraccion = async () => {
-      setErrorMsg('');
-      try {
-        const data = await getInfraccionById(id);
-        const inf = data.infraccion || data;
-        setForm({
-          codigo: inf.codigo || '',
-          descripcion: inf.descripcion || '',
-          valor: inf.valor ?? '',
-        });
-      } catch (error) {
-        console.error(error);
-        const msg =
-          error?.response?.data?.message ||
-          'No se pudo cargar la infracción';
-        setErrorMsg(msg);
-      } finally {
-        setLoading(false);
-      }
+    if (!isEdit) return;
+
+    const loadData = async () => {
+      setLoading(true);
+      const data = await getInfraccionById(id);
+
+      setForm({
+        codigo_infraccion: data.codigo_infraccion || "",
+        descripcion: data.descripcion || "",
+        tipo_infraccion: data.tipo_infraccion || "",
+        valor_base: data.valor_base || "",
+        puntos_descuento: data.puntos_descuento || "",
+      });
+
+      setLoading(false);
     };
 
-    if (isEdit) {
-      fetchInfraccion();
-    }
+    loadData();
   }, [id, isEdit]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === 'valor' ? Number(value) || '' : value,
-    }));
-  };
+  const handleChange = (e) =>
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
     setSubmitting(true);
 
     try {
-      if (isEdit) {
-        await updateInfraccion(id, form);
-      } else {
-        await createInfraccion(form);
-      }
-      navigate('/infracciones');
-    } catch (error) {
-      console.error(error);
-      const msg =
-        error?.response?.data?.message ||
-        'No se pudo guardar la infracción';
-      setErrorMsg(msg);
+      if (isEdit) await updateInfraccion(id, form);
+      else await createInfraccion(form);
+
+      navigate("/infracciones");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return <p>Cargando infracción...</p>;
-  }
+  if (loading)
+    return <p className="py-6 text-center">Cargando infracción...</p>;
 
   return (
-    <div className="max-w-lg space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          {isEdit ? 'Editar infracción' : 'Nueva infracción'}
+    <div className="mx-auto max-w-3xl space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold dark:text-white">
+          {isEdit ? "Editar infracción" : "Nueva infracción"}
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Define el código, descripción y valor de la infracción.
-        </p>
+        <Button onClick={() => navigate("/infracciones")} variant="secondary">
+          Volver
+        </Button>
       </div>
 
-      {errorMsg && (
-        <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/50 dark:text-red-200">
-          {errorMsg}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 rounded-lg border p-4 dark:border-slate-700 dark:bg-slate-900"
+      >
         <Input
           label="Código"
-          name="codigo"
-          value={form.codigo}
+          name="codigo_infraccion"
+          value={form.codigo_infraccion}
           onChange={handleChange}
           required
         />
-        <div className="grid gap-4 md:grid-cols-2">
-          <Input
-            label="Descripción"
-            name="descripcion"
-            value={form.descripcion}
-            onChange={handleChange}
-            required
-          />
-          <Input
-            label="Valor"
-            name="valor"
-            type="number"
-            value={form.valor}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        <Input
+          label="Descripción"
+          name="descripcion"
+          value={form.descripcion}
+          onChange={handleChange}
+          required
+        />
+        <Input
+          label="Tipo de infracción"
+          name="tipo_infraccion"
+          value={form.tipo_infraccion}
+          onChange={handleChange}
+          required
+        />
+        <Input
+          label="Valor base"
+          name="valor_base"
+          value={form.valor_base}
+          type="number"
+          onChange={handleChange}
+          required
+        />
+        <Input
+          label="Puntos descuento"
+          name="puntos_descuento"
+          type="number"
+          value={form.puntos_descuento}
+          onChange={handleChange}
+        />
 
-        <div className="flex gap-2">
-          <Button type="submit" disabled={submitting}>
-            {submitting ? 'Guardando...' : 'Guardar'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate('/infracciones')}
-          >
+        <div className="flex justify-end gap-3 pt-4 border-t dark:border-slate-700">
+          <Button variant="secondary" onClick={() => navigate("/infracciones")}>
             Cancelar
+          </Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "Guardando..." : isEdit ? "Actualizar" : "Crear"}
           </Button>
         </div>
       </form>

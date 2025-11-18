@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/common/Button.jsx";
 import {
-  getVehiculos,
-  deleteVehiculo,
-} from "../../services/vehiculosService.js";
+  getMunicipios,
+  deleteMunicipio,
+} from "../../services/municipiosService.js";
 
-const VehiculosList = () => {
+const MunicipiosList = () => {
   const navigate = useNavigate();
-  const [vehiculos, setVehiculos] = useState([]);
+  const [municipios, setMunicipios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -16,44 +16,45 @@ const VehiculosList = () => {
   const [pageSize, setPageSize] = useState(10);
   const pageSizeOptions = [5, 10, 15, 20];
 
-  const fetchVehiculos = async () => {
+  const fetchMunicipios = async () => {
     setLoading(true);
     setErrorMsg("");
     try {
-      const data = await getVehiculos();
-      setVehiculos(Array.isArray(data) ? data : []);
+      const data = await getMunicipios();
+      setMunicipios(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error(err);
-      setErrorMsg("No se pudieron cargar los vehículos");
-      setVehiculos([]);
+      console.error("Error getMunicipios:", err);
+      const msg =
+        err?.response?.data?.message || "No se pudieron cargar los municipios";
+      setErrorMsg(msg);
+      setMunicipios([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchVehiculos();
+    fetchMunicipios();
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("¿Eliminar este vehículo?")) return;
+    if (!window.confirm("¿Eliminar este municipio?")) return;
     try {
-      await deleteVehiculo(id);
-      fetchVehiculos();
+      await deleteMunicipio(id);
+      fetchMunicipios();
     } catch (err) {
-      console.error(err);
-      alert("No se pudo eliminar el vehículo");
+      console.error("Error deleteMunicipio:", err);
+      alert("No se pudo eliminar el municipio");
     }
   };
 
-  const filtered = Array.isArray(vehiculos)
-    ? vehiculos.filter((v) => {
+  const filtered = Array.isArray(municipios)
+    ? municipios.filter((m) => {
         const s = searchTerm.toLowerCase();
         return (
-          v.placa?.toLowerCase().includes(s) ||
-          v.marca?.toLowerCase().includes(s) ||
-          v.linea_modelo?.toLowerCase().includes(s) ||
-          v.color?.toLowerCase().includes(s)
+          m.nombre_municipio?.toLowerCase().includes(s) ||
+          m.departamento?.toLowerCase().includes(s) ||
+          m.codigo_dane?.toLowerCase().includes(s)
         );
       })
     : [];
@@ -62,17 +63,18 @@ const VehiculosList = () => {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            Vehículos 🚗
+            Municipios 🗺️
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Gestión de vehículos registrados
+            Gestión de municipios y secretarías de tránsito
           </p>
         </div>
-        <Button onClick={() => navigate("/vehiculos/nuevo")}>
-          + Nuevo vehículo
+        <Button onClick={() => navigate("/municipios/nuevo")}>
+          + Nuevo municipio
         </Button>
       </div>
 
@@ -82,6 +84,7 @@ const VehiculosList = () => {
         </div>
       )}
 
+      {/* Buscador */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="relative">
           <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-400">
@@ -89,7 +92,7 @@ const VehiculosList = () => {
           </span>
           <input
             type="text"
-            placeholder="Buscar por placa, marca, modelo o color..."
+            placeholder="Buscar por municipio, departamento o código DANE..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-9 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
@@ -97,59 +100,60 @@ const VehiculosList = () => {
         </div>
       </div>
 
+      {/* Tabla */}
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
             <tr>
-              <th className="px-4 py-3">Placa</th>
-              <th className="px-4 py-3">Marca</th>
-              <th className="hidden sm:table-cell px-4 py-3">Modelo</th>
-              <th className="hidden md:table-cell px-4 py-3">Año</th>
-              <th className="hidden md:table-cell px-4 py-3">Color</th>
+              <th className="px-4 py-3">Municipio</th>
+              <th className="px-4 py-3">Departamento</th>
+              <th className="hidden sm:table-cell px-4 py-3">Código DANE</th>
+              <th className="hidden md:table-cell px-4 py-3">
+                Dirección oficina
+              </th>
               <th className="px-4 py-3 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
             {loading ? (
               <tr>
-                <td colSpan="6" className="px-4 py-8 text-center text-sm">
-                  Cargando vehículos...
+                <td colSpan="5" className="px-4 py-8 text-center text-sm">
+                  Cargando municipios...
                 </td>
               </tr>
             ) : paginated.length === 0 ? (
               <tr>
-                <td colSpan="6" className="px-4 py-8 text-center text-sm">
+                <td colSpan="5" className="px-4 py-8 text-center text-sm">
                   {searchTerm
-                    ? "No se encontraron vehículos con ese criterio."
-                    : "No hay vehículos registrados."}
+                    ? "No se encontraron municipios con ese criterio."
+                    : "No hay municipios registrados."}
                 </td>
               </tr>
             ) : (
-              paginated.map((v) => (
+              paginated.map((m) => (
                 <tr
-                  key={v.id_automotor}
+                  key={m.id_municipio}
                   className="hover:bg-slate-50 dark:hover:bg-slate-800/40"
                 >
-                  <td className="px-4 py-3">{v.placa}</td>
-                  <td className="px-4 py-3">{v.marca}</td>
+                  <td className="px-4 py-3">{m.nombre_municipio}</td>
+                  <td className="px-4 py-3">{m.departamento}</td>
                   <td className="hidden sm:table-cell px-4 py-3">
-                    {v.linea_modelo}
+                    {m.codigo_dane}
                   </td>
                   <td className="hidden md:table-cell px-4 py-3">
-                    {v.modelo_ano}
+                    {m.direccion_oficina_principal}
                   </td>
-                  <td className="hidden md:table-cell px-4 py-3">{v.color}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2 text-xs">
                       <Link
-                        to={`/vehiculos/${v.id_automotor}`}
+                        to={`/municipios/${m.id_municipio}`}
                         className="text-sky-600 hover:underline dark:text-sky-400"
                       >
                         Editar
                       </Link>
                       <button
                         type="button"
-                        onClick={() => handleDelete(v.id_automotor)}
+                        onClick={() => handleDelete(m.id_municipio)}
                         className="text-red-600 hover:underline dark:text-red-400"
                       >
                         Eliminar
@@ -162,11 +166,12 @@ const VehiculosList = () => {
           </tbody>
         </table>
 
+        {/* Footer paginación */}
         <div className="flex flex-col items-center justify-between gap-2 px-4 py-3 text-xs text-slate-500 dark:text-slate-400 sm:flex-row">
           <span>
             Mostrando <span className="font-semibold">{paginated.length}</span>{" "}
             de <span className="font-semibold">{filtered.length}</span>{" "}
-            vehículos
+            municipios
           </span>
           <div className="flex items-center gap-2">
             <span>Mostrar</span>
@@ -189,4 +194,4 @@ const VehiculosList = () => {
   );
 };
 
-export default VehiculosList;
+export default MunicipiosList;

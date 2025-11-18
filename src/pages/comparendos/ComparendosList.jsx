@@ -160,7 +160,7 @@ const ComparendosList = () => {
                           }
                           className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
                         >
-                          Ver/Editar
+                          Editar
                         </button>
                         <button
                           onClick={() => handleDelete(comp.id_comparendo)}

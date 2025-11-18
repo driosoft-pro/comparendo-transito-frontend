@@ -144,8 +144,8 @@ const UserForm = () => {
               onChange={handleChange}
               className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             >
-              <option value="admin">Admin</option>
-              <option value="policia">Policía</option>
+              <option value="administrador">Administrador</option>
+              <option value="policia_transito">Policía</option>
               <option value="ciudadano">Ciudadano</option>
               <option value="operador">Operador</option>
               <option value="auditor">Auditor</option>

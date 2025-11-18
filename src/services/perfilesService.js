@@ -19,13 +19,18 @@ const extractPerfilesList = (data) => {
 /**
  * Normaliza la respuesta del backend para un solo perfil.
  * Soporta:
- * - { ...perfil }
- * - { perfil: { ... } }
- * - { data: { ... } }
+ * - { persona: {...} }
+ * - { perfil: {...} }
+ * - { data: {...} }
+ * - { data: { persona: {...} } }
  */
 const extractPerfil = (data) => {
-  if (data?.perfil) return data.perfil;
-  if (data?.data) return data.data;
+  if (!data) return {};
+  if (data.persona) return data.persona;
+  if (data.perfil) return data.perfil;
+  if (data.data?.persona) return data.data.persona;
+  if (data.data?.perfil) return data.data.perfil;
+  if (data.data) return data.data;
   return data || {};
 };
 
