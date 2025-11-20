@@ -52,7 +52,7 @@ const QuejasList = () => {
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
       case "RESUELTA":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-      case "RECHAZADA":
+      case "ARCHIVADA":
         return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
       default:
         return "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300";
@@ -185,9 +185,9 @@ const QuejasList = () => {
             >
               <option value="">Todos</option>
               <option value="RADICADA">Radicada</option>
-              <option value="EN_REVISION">En Revisión</option>
+              <option value="EN_TRAMITE">En Revisión</option>
               <option value="RESUELTA">Resuelta</option>
-              <option value="RECHAZADA">Rechazada</option>
+              <option value="ARCHIVADA">Archivada</option>
             </select>
           </div>
 

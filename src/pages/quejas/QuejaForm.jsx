@@ -241,9 +241,9 @@ const QuejaForm = () => {
                 required
               >
                 <option value="RADICADA">Radicada</option>
-                <option value="EN_REVISION">En Revisión</option>
+                <option value="EN_TRAMITE">En Revisión</option>
                 <option value="RESUELTA">Resuelta</option>
-                <option value="RECHAZADA">Rechazada</option>
+                <option value="ARCHIVADA">Archivada</option>
               </select>
             </div>
           </div>
