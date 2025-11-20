@@ -38,8 +38,10 @@ import QuejaForm from "./pages/quejas/QuejaForm.jsx";
 const App = () => {
   return (
     <Routes>
+      {/* Pública */}
       <Route path="/login" element={<Login />} />
 
+      {/* Protegidas */}
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
@@ -91,11 +93,13 @@ const App = () => {
           {/* Comparendos */}
           <Route path="/comparendos" element={<ComparendosList />} />
           <Route path="/comparendos/nuevo" element={<ComparendoForm />} />
+          <Route path="/comparendos/editar/:id" element={<ComparendoForm />} />
           <Route path="/comparendos/:id" element={<ComparendoForm />} />
 
           {/* Infracciones */}
           <Route path="/infracciones" element={<InfraccionesList />} />
           <Route path="/infracciones/nuevo" element={<InfraccionForm />} />
+          <Route path="/infracciones/editar/:id" element={<InfraccionForm />} />
           <Route path="/infracciones/:id" element={<InfraccionForm />} />
 
           {/* Quejas */}
@@ -105,6 +109,7 @@ const App = () => {
         </Route>
       </Route>
 
+      {/* Fallback */}
       <Route path="*" element={<Login />} />
     </Routes>
   );
