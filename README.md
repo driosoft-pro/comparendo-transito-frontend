@@ -39,6 +39,10 @@ Implementa un **panel de administración para Comparendos de Tránsito** moderno
 
 ---
 
+## WEB
+
+---
+
 ![login.png](public/img/login.png)
 
 ---
@@ -47,58 +51,134 @@ Implementa un **panel de administración para Comparendos de Tránsito** moderno
 
 ---
 
+![users.png](public/img/users.png)
+
+---
+
+![perfiles.png](public/img/perfiles.png)
+
+---
+
+![comparendos.png](public/img/comparendos.png)
+
+---
+
+![quejas.png](public/img/quejas.png)
+
+---
+
+## MOVIL
+
+---
+
+![vehiculos.png](public/img/vehiculos.png)
+
+---
+
+![licencias.png](public/img/licencias.png)
+
+---
+
 ## Estructura básica
 
 ```
 /comparendo-transito-frontend
 │
-├── public/                        # Recursos estáticos
+├── public/                                # Recursos estáticos servidos por Vite
 │
 ├── src/
-│   ├── assets/                    # Imágenes, íconos, logos, etc.
+│   ├── assets/                            # Imágenes, íconos, logos, etc.
 │   │
-│   ├── components/                # Componentes reutilizables
+│   ├── components/                        # Componentes reutilizables
 │   │   ├── common/
-│   │   │   ├── Button.jsx         # Botón base (variantes, tamaños)
-│   │   │   ├── Input.jsx          # Input estilizado
-│   │   │   └── ThemeToggle.jsx    # Switch de tema claro/oscuro
+│   │   │   ├── Button.jsx                 # Botón base (variantes, tamaños)
+│   │   │   ├── Input.jsx                  # Input estilizado
+│   │   │   └── ThemeToggle.jsx            # Switch de tema claro/oscuro
 │   │   │
 │   │   ├── layout/
-│   │   │   ├── Layout.jsx         # Layout principal (sidebar + header + contenido)
-│   │   │   ├── Sidebar.jsx        # Menú lateral (navegación)
-│   │   │   └── Header.jsx         # Header superior (usuario, logout, tema)
+│   │   │   ├── Layout.jsx                 # Layout principal (sidebar + header + contenido)
+│   │   │   ├── Sidebar.jsx                # Menú lateral de navegación
+│   │   │   └── Header.jsx                 # Header superior (usuario, logout, tema)
 │   │   │
-│   │   └── ProtectedRoute.jsx     # Ruta protegida (requiere autenticación)
+│   │   └── ProtectedRoute.jsx             # Envuelve rutas privadas (requiere autenticación)
 │   │
 │   ├── contexts/
-│   │   └── AuthContext.jsx        # Manejo de sesión (token + usuario)
+│   │   └── AuthContext.jsx                # Manejo de sesión (token, usuario, logout)
 │   │
 │   ├── hooks/
-│   │   └── useTheme.jsx           # Hook + contexto de tema (light/dark)
+│   │   └── useTheme.jsx                   # Hook/contexto para tema light/dark
 │   │
-│   ├── pages/                     # Páginas (vistas) de la app
-│   │   ├── Login.jsx              # Pantalla de login
-│   │   ├── Dashboard.jsx          # Dashboard principal
-│   │   └── users/
-│   │       ├── UsersList.jsx      # Listado de usuarios (GET /usuarios)
-│   │       └── UserForm.jsx       # Formulario crear/editar usuarios
+│   ├── pages/                             # Vistas principales de la aplicación
+│   │   ├── comparendos/
+│   │   │   ├── ComparendoForm.jsx         # Crear / editar comparendo
+│   │   │   └── ComparendosList.jsx        # Listado de comparendos
+│   │   │
+│   │   ├── CategoriasLicencia/
+│   │   │   ├── CategoriaLicenciaForm.jsx  # Crear / editar categoría de licencia
+│   │   │   └── CategoriasLicenciaList.jsx # Listado de categorías de licencia
+│   │   │
+│   │   ├── infracciones/
+│   │   │   ├── InfraccionForm.jsx         # Crear / editar infracción
+│   │   │   └── InfraccionesList.jsx       # Listado de infracciones
+│   │   │
+│   │   ├── licencias/
+│   │   │   ├── LicenciaForm.jsx           # Crear / editar licencia de conducción
+│   │   │   └── LicenciasList.jsx          # Listado de licencias
+│   │   │
+│   │   ├── municipios/
+│   │   │   ├── MunicipioForm.jsx          # Crear / editar municipio
+│   │   │   └── MunicipiosList.jsx         # Listado de municipios
+│   │   │
+│   │   ├── perfiles/
+│   │   │   ├── PerfilForm.jsx             # Crear / editar perfil de usuario
+│   │   │   └── PerfilesList.jsx           # Listado de perfiles
+│   │   │
+│   │   ├── quejas/
+│   │   │   ├── QuejaForm.jsx              # Crear / editar queja
+│   │   │   └── QuejasList.jsx             # Listado de quejas
+│   │   │
+│   │   ├── secretarias/
+│   │   │   ├── SecretariaForm.jsx         # Crear / editar secretaría de tránsito
+│   │   │   └── SecretariasList.jsx        # Listado de secretarías
+│   │   │
+│   │   ├── users/
+│   │   │   ├── UserForm.jsx               # Crear / editar usuario
+│   │   │   └── UsersList.jsx              # Listado de usuarios
+│   │   │
+│   │   ├── vehiculos/
+│   │   │   ├── VehiculoForm.jsx           # Crear / editar vehículo
+│   │   │   └── VehiculosList.jsx          # Listado de vehículos
+│   │   │
+│   │   ├── Dashboard.jsx                  # Dashboard principal del sistema
+│   │   └── Login.jsx                      # Pantalla de autenticación
 │   │
-│   ├── services/                  # Clientes HTTP / integración con la API
-│   │   ├── apiClient.js           # Axios configurado con baseURL + token
-│   │   └── usersService.js        # Funciones CRUD de usuarios
+│   ├── services/                          # Capa de acceso a la API (Axios)
+│   │   ├── apiClient.js                   # Cliente Axios con baseURL y token
+│   │   ├── categoriasLicenciaService.js   # CRUD categorías de licencia
+│   │   ├── comparendoInfraccionesService.js # CRUD comparendo_infracción
+│   │   ├── comparendosService.js          # CRUD comparendos
+│   │   ├── infraccionesService.js         # CRUD infracciones
+│   │   ├── licenciaCategoriasService.js   # CRUD relación licencia-categoría
+│   │   ├── licenciasService.js            # CRUD licencias
+│   │   ├── municipiosService.js           # CRUD municipios
+│   │   ├── perfilesService.js             # CRUD perfiles
+│   │   ├── quejasService.js               # CRUD quejas
+│   │   ├── secretariasService.js          # CRUD secretarías de tránsito
+│   │   ├── usersService.js                # CRUD usuarios
+│   │   └── vehiculosService.js            # CRUD vehículos
 │   │
-│   ├── App.jsx                    # Definición de rutas (React Router)
-│   ├── main.jsx                   # Punto de entrada React
-│   └── index.css                  # Estilos globales + Tailwind
+│   ├── App.jsx                            # Definición de rutas (React Router)
+│   ├── main.jsx                           # Punto de entrada React + montaje en DOM
+│   └── index.css                          # Estilos globales + Tailwind
 │
-├── .env.example                   # Ejemplo de variables de entorno
-├── .gitignore                     # Ignorar node_modules, dist, .env, etc.
-├── index.html                     # HTML base de Vite
-├── package.json                   # Dependencias y scripts
-├── postcss.config.js              # Config de PostCSS
-├── tailwind.config.js             # Config de Tailwind CSS
-├── vite.config.js                 # Configuración Vite
-└── README.md                      # Este archivo
+├── .env.example                           # Variables de entorno necesarias (VITE_*)
+├── .gitignore                             # node_modules, dist, .env, etc.
+├── index.html                             # HTML base de Vite
+├── package.json                           # Dependencias y scripts npm
+├── postcss.config.js                      # Configuración de PostCSS
+├── tailwind.config.js                     # Configuración de Tailwind CSS
+├── vite.config.js                         # Configuración de Vite (puerto 5173)
+└── README.md                              # Documentación principal del frontend
 ```
 
 ---
