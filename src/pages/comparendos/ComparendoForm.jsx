@@ -12,6 +12,14 @@ import { getLicencias } from "../../services/licenciasService.js";
 import { getUsers } from "../../services/usersService.js";
 import { getVehiculos } from "../../services/vehiculosService.js";
 
+// NUEVOS IMPORTS PARA INFRACCIONES
+import { getInfracciones } from "../../services/infraccionesService.js";
+import {
+  getInfraccionesByComparendo,
+  createComparendoInfraccion,
+  deleteComparendoInfraccion,
+} from "../../services/comparendoInfraccionesService.js";
+
 const toDateTimeLocal = (value) => {
   if (!value) return "";
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) {
@@ -20,6 +28,15 @@ const toDateTimeLocal = (value) => {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
   return d.toISOString().slice(0, 16);
+};
+
+const formatCurrencyCOP = (value) => {
+  if (value == null || Number.isNaN(Number(value))) return "";
+  return Number(value).toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
 };
 
 const ComparendoForm = () => {
@@ -46,6 +63,12 @@ const ComparendoForm = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
 
+  // NUEVOS STATES PARA INFRACCIONES
+  const [infracciones, setInfracciones] = useState([]);
+  const [selectedInfracciones, setSelectedInfracciones] = useState([]); // [id_infraccion]
+  const [existingComparendoInfracciones, setExistingComparendoInfracciones] =
+    useState([]);
+
   const [loading, setLoading] = useState(true);
   const [loadingRefs, setLoadingRefs] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -56,30 +79,39 @@ const ComparendoForm = () => {
     const fetchRefs = async () => {
       setLoadingRefs(true);
       try {
-        const [munRes, licRes, usrRes, vehRes] = await Promise.all([
+        const [munRes, licRes, usrRes, vehRes, infrRes] = await Promise.all([
           getMunicipios(),
           getLicencias(),
           getUsers(),
           getVehiculos(),
+          getInfracciones(), // NUEVO
         ]);
 
         const munList = Array.isArray(munRes)
           ? munRes
           : munRes?.municipios || munRes?.registros || [];
+
         const licList = Array.isArray(licRes)
           ? licRes
           : licRes?.licencias || licRes?.registros || [];
+
         const usrList = Array.isArray(usrRes)
           ? usrRes
           : usrRes?.usuarios || usrRes?.registros || [];
+
         const vehList = Array.isArray(vehRes)
           ? vehRes
           : vehRes?.vehiculos || vehRes?.registros || [];
+
+        const infrList = Array.isArray(infrRes)
+          ? infrRes
+          : infrRes?.infracciones || infrRes?.registros || [];
 
         setMunicipios(munList);
         setLicencias(licList);
         setUsuarios(usrList);
         setVehiculos(vehList);
+        setInfracciones(infrList); // NUEVO
       } catch (error) {
         console.error("Error cargando catálogos de comparendos:", error);
       } finally {
@@ -90,7 +122,7 @@ const ComparendoForm = () => {
     fetchRefs();
   }, []);
 
-  // Comparendo (edición)
+  // Comparendo (edición) + infracciones asociadas
   useEffect(() => {
     if (!isEdit) {
       setLoading(false);
@@ -116,6 +148,13 @@ const ComparendoForm = () => {
           id_policia_transito: c.id_policia_transito ?? "",
           id_automotor: c.id_automotor ?? "",
         });
+
+        // Cargar infracciones asociadas a este comparendo
+        const rels = await getInfraccionesByComparendo(id);
+        setExistingComparendoInfracciones(rels || []);
+        setSelectedInfracciones(
+          (rels || []).map((r) => r.id_infraccion).filter(Boolean),
+        );
       } catch (error) {
         console.error(error);
         const msg =
@@ -146,6 +185,16 @@ const ComparendoForm = () => {
     }));
   };
 
+  // Toggle de infracciones seleccionadas
+  const handleToggleInfraccion = (id_infraccion) => {
+    setSelectedInfracciones((prev) => {
+      if (prev.includes(id_infraccion)) {
+        return prev.filter((id) => id !== id_infraccion);
+      }
+      return [...prev, id_infraccion];
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -166,10 +215,50 @@ const ComparendoForm = () => {
         id_automotor: form.id_automotor || null,
       };
 
+      // 1. Guardar / actualizar el comparendo
+      let savedComparendo;
       if (isEdit) {
-        await updateComparendo(id, payload);
+        savedComparendo = await updateComparendo(id, payload);
       } else {
-        await createComparendo(payload);
+        savedComparendo = await createComparendo(payload);
+      }
+
+      const idComparendo =
+        savedComparendo?.id_comparendo != null
+          ? savedComparendo.id_comparendo
+          : Number(id);
+
+      // 2. Sincronizar infracciones asociadas al comparendo
+      //    Estrategia simple: borrar todas las relaciones anteriores y recrearlas.
+      try {
+        if (isEdit && existingComparendoInfracciones.length > 0) {
+          await Promise.all(
+            existingComparendoInfracciones.map((rel) =>
+              deleteComparendoInfraccion(rel.id_comparendo, rel.id_infraccion),
+            ),
+          );
+        }
+
+        // Crear las nuevas relaciones seleccionadas
+        if (selectedInfracciones.length > 0 && idComparendo) {
+          await Promise.all(
+            selectedInfracciones.map((id_infraccion) => {
+              const infr = infracciones.find(
+                (i) => i.id_infraccion === id_infraccion,
+              );
+              const valor = infr?.valor_base ?? null;
+
+              return createComparendoInfraccion({
+                id_comparendo: idComparendo,
+                id_infraccion,
+                valor_calculado: valor,
+              });
+            }),
+          );
+        }
+      } catch (errRel) {
+        console.error("Error guardando infracciones del comparendo:", errRel);
+        // No frenamos la navegación, pero dejamos log si quieres manejarlo
       }
 
       navigate("/comparendos");
@@ -408,6 +497,67 @@ const ComparendoForm = () => {
               ))}
             </select>
           </div>
+        </div>
+
+        {/* NUEVA SECCIÓN: Infracciones del comparendo */}
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-sm dark:border-slate-700 dark:bg-slate-800/60">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Infracciones asociadas al comparendo
+            </h3>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Selecciona una o varias infracciones
+            </span>
+          </div>
+
+          {loadingRefs && !infracciones.length ? (
+            <p className="text-xs text-slate-500">Cargando infracciones...</p>
+          ) : infracciones.length === 0 ? (
+            <p className="text-xs text-slate-500">
+              No hay infracciones configuradas.
+            </p>
+          ) : (
+            <div className="max-h-52 space-y-1 overflow-y-auto pr-1">
+              {infracciones.map((inf) => {
+                const checked = selectedInfracciones.includes(
+                  inf.id_infraccion,
+                );
+                const label = `${inf.codigo_infraccion} - ${
+                  inf.descripcion || ""
+                }`;
+                return (
+                  <label
+                    key={inf.id_infraccion}
+                    className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-3.5 w-3.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                      checked={checked}
+                      onChange={() => handleToggleInfraccion(inf.id_infraccion)}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-slate-800 dark:text-slate-100">
+                          {label}
+                        </span>
+                        {inf.valor_base != null && (
+                          <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                            {formatCurrencyCOP(inf.valor_base)}
+                          </span>
+                        )}
+                      </div>
+                      {inf.tipo_infraccion && (
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Tipo: {inf.tipo_infraccion}
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

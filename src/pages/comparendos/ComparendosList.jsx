@@ -10,13 +10,13 @@ import { getLicencias } from "../../services/licenciasService.js";
 import { getUsers } from "../../services/usersService.js";
 import { getVehiculos } from "../../services/vehiculosService.js";
 import { getInfracciones } from "../../services/infraccionesService.js";
-import { getComparendoInfracciones } from "../../services/comparendoInfraccionesService.js";
+import { getInfraccionesByComparendo } from "../../services/comparendoInfraccionesService.js";
 
 const formatDateTime = (value) => {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) {
-    return value.replace("T", " ");
+    return String(value).replace("T", " ");
   }
   return d.toLocaleString("es-CO", {
     year: "numeric",
@@ -91,34 +91,37 @@ const ComparendosList = () => {
 
   const [loading, setLoading] = useState(true);
   const [loadingRefs, setLoadingRefs] = useState(true);
+  const [loadingRelaciones, setLoadingRelaciones] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [search, setSearch] = useState("");
 
   const [pageSize, setPageSize] = useState(10);
   const pageSizeOptions = [5, 10, 15, 20];
 
+  // Catálogos básicos (municipios, licencias, usuarios, vehículos, infracciones)
   const fetchRefs = async () => {
     setLoadingRefs(true);
     try {
-      const [munRes, licRes, usrRes, vehRes, infrRes, compInfList] =
-        await Promise.all([
-          getMunicipios(),
-          getLicencias(),
-          getUsers(),
-          getVehiculos(),
-          getInfracciones(),
-          getComparendoInfracciones(),
-        ]);
+      const [munRes, licRes, usrRes, vehRes, infrRes] = await Promise.all([
+        getMunicipios(),
+        getLicencias(),
+        getUsers(),
+        getVehiculos(),
+        getInfracciones(),
+      ]);
 
       const municipios = Array.isArray(munRes)
         ? munRes
         : munRes?.municipios || munRes?.registros || [];
+
       const licencias = Array.isArray(licRes)
         ? licRes
         : licRes?.licencias || licRes?.registros || [];
+
       const usuarios = Array.isArray(usrRes)
         ? usrRes
         : usrRes?.usuarios || usrRes?.registros || [];
+
       const vehiculos = Array.isArray(vehRes)
         ? vehRes
         : vehRes?.vehiculos || vehRes?.registros || [];
@@ -126,10 +129,6 @@ const ComparendosList = () => {
       const infracciones = Array.isArray(infrRes)
         ? infrRes
         : infrRes?.infracciones || infrRes?.registros || [];
-
-      const comparendoInfracciones = Array.isArray(compInfList)
-        ? compInfList
-        : [];
 
       setMunicipiosMap(
         buildMap(municipios, "id_municipio", (m) => m.nombre_municipio),
@@ -144,7 +143,7 @@ const ComparendosList = () => {
         buildMap(vehiculos, "id_automotor", (v) => v.placa || v.placa_vehiculo),
       );
 
-      // Mapa de infracciones: id_infraccion -> "C01 - Exceso de velocidad..."
+      // id_infraccion -> "C01 - descripción"
       setInfraccionesMap(
         buildMap(
           infracciones,
@@ -155,16 +154,6 @@ const ComparendosList = () => {
             }`,
         ),
       );
-
-      // Agrupar relaciones por comparendo: id_comparendo -> [ ... ]
-      const grouped = {};
-      comparendoInfracciones.forEach((ci) => {
-        const idComp = ci.id_comparendo;
-        if (!idComp) return;
-        if (!grouped[idComp]) grouped[idComp] = [];
-        grouped[idComp].push(ci);
-      });
-      setComparendoInfraccionesMap(grouped);
     } catch (error) {
       console.error("Error cargando catálogos para comparendos:", error);
     } finally {
@@ -172,12 +161,16 @@ const ComparendosList = () => {
     }
   };
 
+  // Comparendos
   const fetchComparendos = async () => {
     setLoading(true);
     setErrorMsg("");
     try {
       const data = await getComparendos();
-      setComparendos(data || []);
+      const list = Array.isArray(data)
+        ? data
+        : data?.comparendos || data?.registros || [];
+      setComparendos(list);
     } catch (error) {
       console.error(error);
       const msg =
@@ -193,6 +186,45 @@ const ComparendosList = () => {
     fetchRefs();
     fetchComparendos();
   }, []);
+
+  // 🔥 NUEVO: cargar infracciones por cada comparendo usando el helper que ya funciona
+  useEffect(() => {
+    const loadRelaciones = async () => {
+      if (!comparendos.length) {
+        setComparendoInfraccionesMap({});
+        return;
+      }
+
+      setLoadingRelaciones(true);
+      try {
+        const grouped = {};
+
+        await Promise.all(
+          comparendos.map(async (c) => {
+            try {
+              const rels = await getInfraccionesByComparendo(c.id_comparendo);
+              if (rels && rels.length) {
+                grouped[c.id_comparendo] = rels;
+              }
+            } catch (err) {
+              console.error(
+                `Error cargando infracciones del comparendo ${c.id_comparendo}:`,
+                err,
+              );
+            }
+          }),
+        );
+
+        setComparendoInfraccionesMap(grouped);
+      } catch (err) {
+        console.error("Error cargando relaciones comparendo-infracción:", err);
+      } finally {
+        setLoadingRelaciones(false);
+      }
+    };
+
+    loadRelaciones();
+  }, [comparendos]);
 
   const handleDelete = async (id) => {
     if (
@@ -237,6 +269,8 @@ const ComparendosList = () => {
   });
 
   const paginated = filtered.slice(0, pageSize);
+
+  const isLoadingAny = loading || loadingRefs || loadingRelaciones;
 
   return (
     <div className="space-y-4">
@@ -315,7 +349,7 @@ const ComparendosList = () => {
           </thead>
 
           <tbody className="divide-y dark:divide-slate-700">
-            {loading || loadingRefs ? (
+            {isLoadingAny ? (
               <tr>
                 <td colSpan={10} className="py-6 text-center text-sm">
                   Cargando comparendos...
