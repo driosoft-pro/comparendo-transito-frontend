@@ -4,12 +4,13 @@ import clsx from "clsx";
 import { Button } from "../common/Button.jsx";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: "📊" },
+  { to: "/", label: "Dashboard", icon: "📈" },
   { to: "/usuarios", label: "Usuarios", icon: "👥" },
   { to: "/perfiles", label: "Perfiles", icon: "👤" },
-  { to: "/vehiculos", label: "Vehículos", icon: "🚗" },
-  { to: "/categorias-licencia", label: "Categorías de Licencia", icon: "📜" },
+  { to: "/vehiculos", label: "Vehículos", icon: "🚘" },
+  { to: "/categorias-licencia", label: "Categorías de Licencia", icon: "🗂️" },
   { to: "/licencias", label: "Licencias", icon: "🎫" },
+  { to: "/secretarias", label: "Secretarias", icon: "🏛️" },
   { to: "/municipios", label: "Municipios", icon: "🏙️" },
   { to: "/comparendos", label: "Comparendos", icon: "👮" },
   { to: "/infracciones", label: "Infracciones", icon: "⚠️" },

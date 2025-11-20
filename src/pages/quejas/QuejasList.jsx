@@ -1,12 +1,29 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getQuejas, deleteQueja } from "../../services/quejasService.js";
+import { getComparendos } from "../../services/comparendosService.js";
+import { getUsers } from "../../services/usersService.js";
 import { Button } from "../../components/common/Button.jsx";
+
+const buildMap = (list, keyField, labelFn) => {
+  const map = {};
+  list.forEach((item) => {
+    const key = item[keyField];
+    if (key == null) return;
+    map[key] = labelFn(item);
+  });
+  return map;
+};
 
 const QuejasList = () => {
   const navigate = useNavigate();
+
   const [quejas, setQuejas] = useState([]);
+  const [comparendosMap, setComparendosMap] = useState({});
+  const [usuariosMap, setUsuariosMap] = useState({});
+
   const [loading, setLoading] = useState(true);
+  const [loadingRefs, setLoadingRefs] = useState(true);
   const [error, setError] = useState("");
 
   const [filterEstado, setFilterEstado] = useState("");
@@ -14,36 +31,6 @@ const QuejasList = () => {
 
   const [pageSize, setPageSize] = useState(10);
   const pageSizeOptions = [5, 10, 15, 20];
-
-  const fetchQuejas = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const result = await getQuejas();
-      setQuejas(Array.isArray(result) ? result : []);
-    } catch (err) {
-      console.error("Error cargando quejas:", err);
-      setError("No se pudieron cargar las quejas");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchQuejas();
-  }, []);
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("¿Está seguro de eliminar esta queja?")) return;
-
-    try {
-      await deleteQueja(id);
-      await fetchQuejas();
-    } catch (err) {
-      console.error("Error eliminando queja:", err);
-      alert("No se pudo eliminar la queja");
-    }
-  };
 
   const formatDateTime = (dateTime) => {
     if (!dateTime) return "N/A";
@@ -72,24 +59,81 @@ const QuejasList = () => {
     }
   };
 
-  // 🔍 filtro combinado por estado + búsqueda
-  const filteredQuejas = quejas.filter((queja) => {
-    if (filterEstado && queja.estado !== filterEstado) return false;
+  const fetchAll = async () => {
+    setLoading(true);
+    setLoadingRefs(true);
+    setError("");
+
+    try {
+      const [queRes, compRes, usrRes] = await Promise.all([
+        getQuejas(),
+        getComparendos(),
+        getUsers(),
+      ]);
+
+      const qList = Array.isArray(queRes) ? queRes : [];
+      setQuejas(qList);
+
+      const comps = Array.isArray(compRes)
+        ? compRes
+        : compRes?.comparendos || compRes?.registros || [];
+      const usrs = Array.isArray(usrRes)
+        ? usrRes
+        : usrRes?.usuarios || usrRes?.registros || [];
+
+      setComparendosMap(
+        buildMap(comps, "id_comparendo", (c) => c.numero_comparendo),
+      );
+      setUsuariosMap(
+        buildMap(usrs, "id_usuario", (u) => u.username || u.nombre),
+      );
+    } catch (err) {
+      console.error("Error cargando quejas/catálogos:", err);
+      setError("No se pudieron cargar las quejas");
+    } finally {
+      setLoading(false);
+      setLoadingRefs(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const handleDelete = async (_id) => {
+    if (!window.confirm("¿Está seguro de eliminar esta queja?")) return;
+
+    try {
+      await deleteQueja(_id);
+      await fetchAll();
+    } catch (err) {
+      console.error("Error eliminando queja:", err);
+      alert("No se pudo eliminar la queja");
+    }
+  };
+
+  const filteredQuejas = quejas.filter((q) => {
+    if (filterEstado && q.estado !== filterEstado) return false;
 
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
 
+    const numeroComparendo =
+      comparendosMap[q.id_comparendo] || String(q.id_comparendo || "");
+    const nombrePersona =
+      usuariosMap[q.id_persona] || String(q.id_persona || "");
+
     return (
-      String(queja.id_queja)?.toLowerCase().includes(s) ||
-      String(queja.id_comparendo)?.toLowerCase().includes(s) ||
-      queja.medio_radicacion?.toLowerCase().includes(s) ||
-      queja.texto_queja?.toLowerCase().includes(s)
+      numeroComparendo.toLowerCase().includes(s) ||
+      nombrePersona.toLowerCase().includes(s) ||
+      (q.medio_radicacion || "").toLowerCase().includes(s) ||
+      (q.texto_queja || "").toLowerCase().includes(s)
     );
   });
 
   const paginatedQuejas = filteredQuejas.slice(0, pageSize);
 
-  if (loading) {
+  if (loading || loadingRefs) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="text-slate-600 dark:text-slate-300">
@@ -111,7 +155,14 @@ const QuejasList = () => {
             Gestión de quejas ciudadanas sobre comparendos
           </p>
         </div>
-        <Button onClick={() => navigate("/quejas/nuevo")}>+ Nueva Queja</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchAll}>
+            Recargar
+          </Button>
+          <Button size="sm" onClick={() => navigate("/quejas/nuevo")}>
+            + Nueva Queja
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -147,7 +198,7 @@ const QuejasList = () => {
               </span>
               <input
                 type="text"
-                placeholder="Buscar por texto, medio, ID queja o comparendo..."
+                placeholder="Buscar por texto, persona o comparendo..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 bg-white px-9 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
@@ -164,7 +215,7 @@ const QuejasList = () => {
             <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  ID
+                  #
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Fecha Radicación
@@ -174,6 +225,9 @@ const QuejasList = () => {
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Comparendo
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Persona
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Estado
@@ -190,7 +244,7 @@ const QuejasList = () => {
               {paginatedQuejas.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="7"
+                    colSpan="8"
                     className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
                     {filterEstado || searchTerm
@@ -199,61 +253,73 @@ const QuejasList = () => {
                   </td>
                 </tr>
               ) : (
-                paginatedQuejas.map((queja) => (
-                  <tr
-                    key={queja.id_queja}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                  >
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
-                      #{queja.id_queja}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                      {formatDateTime(queja.fecha_radicacion)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
-                        {queja.medio_radicacion || "N/A"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                      ID: {queja.id_comparendo || "N/A"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getEstadoBadgeClass(
-                          queja.estado,
-                        )}`}
-                      >
-                        {queja.estado || "RADICADA"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-                      {queja.fecha_respuesta ? (
-                        <span className="text-green-600 dark:text-green-400">
-                          ✓ Respondida
+                paginatedQuejas.map((q, index) => {
+                  const displayNumber = index + 1;
+                  const numeroComparendo =
+                    comparendosMap[q.id_comparendo] ||
+                    `ID: ${q.id_comparendo || "N/A"}`;
+                  const nombrePersona =
+                    usuariosMap[q.id_persona] || `ID: ${q.id_persona || "N/A"}`;
+
+                  return (
+                    <tr
+                      key={q._id} // 👈 clave única por fila
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    >
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-slate-100">
+                        #{displayNumber}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                        {formatDateTime(q.fecha_radicacion)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
+                          {q.medio_radicacion || "N/A"}
                         </span>
-                      ) : (
-                        <span className="text-slate-400">Pendiente</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => navigate(`/quejas/${queja.id_queja}`)}
-                          className="text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300"
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                        {numeroComparendo}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                        {nombrePersona}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getEstadoBadgeClass(
+                            q.estado,
+                          )}`}
                         >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDelete(queja.id_queja)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          {q.estado || "RADICADA"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                        {q.fecha_respuesta ? (
+                          <span className="text-green-600 dark:text-green-400">
+                            ✓ Respondida
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">Pendiente</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => navigate(`/quejas/${q._id}`)}
+                            className="text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(q._id)}
+                            className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -282,42 +348,6 @@ const QuejasList = () => {
             </select>
             <span>registros</span>
           </div>
-        </div>
-      </div>
-
-      {/* Estadísticas */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Total
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-            {quejas.length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Radicadas
-          </p>
-          <p className="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">
-            {quejas.filter((q) => q.estado === "RADICADA").length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            En Revisión
-          </p>
-          <p className="mt-1 text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-            {quejas.filter((q) => q.estado === "EN_REVISION").length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Resueltas
-          </p>
-          <p className="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">
-            {quejas.filter((q) => q.estado === "RESUELTA").length}
-          </p>
         </div>
       </div>
     </div>

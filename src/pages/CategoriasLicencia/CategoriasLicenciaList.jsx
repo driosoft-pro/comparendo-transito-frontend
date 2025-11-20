@@ -20,7 +20,6 @@ const CategoriasLicenciaList = () => {
     setErrorMsg("");
     try {
       const data = await getCategoriasLicencia();
-      // backend: [{ id_categoria, codigo, descripcion, deleted_at }]
       setCategorias(data || []);
     } catch (error) {
       console.error(error);
@@ -38,9 +37,9 @@ const CategoriasLicenciaList = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!confirm("¿Seguro que deseas eliminar esta categoría de licencia?")) {
+    if (!confirm("¿Seguro que deseas eliminar esta categoría de licencia?"))
       return;
-    }
+
     try {
       await deleteCategoriaLicencia(id);
       await fetchCategorias();
@@ -54,10 +53,10 @@ const CategoriasLicenciaList = () => {
   };
 
   const filtered = categorias.filter((cat) => {
-    const searchLower = searchTerm.toLowerCase();
+    const term = searchTerm.toLowerCase();
     return (
-      (cat.codigo || "").toLowerCase().includes(searchLower) ||
-      (cat.descripcion || "").toLowerCase().includes(searchLower)
+      cat.codigo.toLowerCase().includes(term) ||
+      (cat.descripcion || "").toLowerCase().includes(term)
     );
   });
 
@@ -75,15 +74,14 @@ const CategoriasLicenciaList = () => {
             Gestión de categorías para licencias de conducción
           </p>
         </div>
-        <div className="flex justify-start sm:justify-end">
-          <Button
-            as={Link}
-            to="/categorias-licencia/nuevo"
-            className="!no-underline"
-          >
-            Nueva categoría
-          </Button>
-        </div>
+
+        <Button
+          as={Link}
+          to="/categorias-licencia/nuevo"
+          className="!no-underline"
+        >
+          Nueva categoría
+        </Button>
       </div>
 
       {/* Errores */}
@@ -96,16 +94,14 @@ const CategoriasLicenciaList = () => {
       {/* Buscador */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="relative">
-          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400 text-sm">
-            <span></span>
-          </span>
           <input
             type="text"
             placeholder="Buscar por código o descripción..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-8 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
+            className="w-full rounded-lg border border-slate-300 bg-white px-8 py-2 text-sm focus:border-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
           />
+          <span className="absolute left-3 top-2 text-slate-400"></span>
         </div>
       </div>
 
@@ -120,48 +116,40 @@ const CategoriasLicenciaList = () => {
               <th className="px-4 py-2 text-right">Acciones</th>
             </tr>
           </thead>
+
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="4" className="px-4 py-6 text-center text-sm">
+                <td colSpan="4" className="px-4 py-6 text-center">
                   Cargando categorías...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan="4" className="px-4 py-6 text-center text-sm">
-                  {searchTerm
-                    ? "No hay categorías que coincidan con la búsqueda."
-                    : "No hay categorías registradas."}
+                <td colSpan="4" className="px-4 py-6 text-center">
+                  Sin resultados.
                 </td>
               </tr>
             ) : (
               paginated.map((cat) => (
                 <tr
                   key={cat.id_categoria}
-                  className="border-t border-slate-100 text-sm dark:border-slate-800"
+                  className="border-t border-slate-100 dark:border-slate-800"
                 >
-                  <td className="px-4 py-2 whitespace-nowrap">
-                    {cat.id_categoria}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap font-medium">
-                    {cat.codigo}
-                  </td>
-                  <td className="px-4 py-2">
-                    {cat.descripcion || (
-                      <span className="text-slate-400">—</span>
-                    )}
-                  </td>
+                  <td className="px-4 py-2">{cat.id_categoria}</td>
+                  <td className="px-4 py-2 font-medium">{cat.codigo}</td>
+                  <td className="px-4 py-2">{cat.descripcion}</td>
+
                   <td className="px-4 py-2 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex justify-end gap-2">
                       <Link
-                        to={`/categorias-licencia/${cat.id_categoria}`}
+                        to={`/categorias-licencia/editar/${cat.id_categoria}`}
                         className="text-xs text-primary-600 hover:underline dark:text-primary-400"
                       >
                         Editar
                       </Link>
+
                       <button
-                        type="button"
                         onClick={() => handleDelete(cat.id_categoria)}
                         className="text-xs text-red-600 hover:underline dark:text-red-400"
                       >
@@ -175,24 +163,21 @@ const CategoriasLicenciaList = () => {
           </tbody>
         </table>
 
-        {/* Footer paginado */}
-        <div className="flex flex-col items-center justify-between gap-2 px-4 py-3 text-xs text-slate-500 dark:text-slate-400 sm:flex-row">
+        {/* Footer */}
+        <div className="flex justify-between px-4 py-3 text-xs">
           <span>
-            Mostrando <span className="font-semibold">{paginated.length}</span>{" "}
-            de <span className="font-semibold">{filtered.length}</span>{" "}
-            categorías
+            Mostrando {paginated.length} de {filtered.length}
           </span>
-          <div className="flex items-center gap-2">
+
+          <div className="flex gap-2">
             <span>Mostrar</span>
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-800"
+              className="rounded border border-slate-300 px-2 py-1 dark:border-slate-600 dark:bg-slate-800"
             >
               {pageSizeOptions.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
+                <option key={size}>{size}</option>
               ))}
             </select>
             <span>registros</span>

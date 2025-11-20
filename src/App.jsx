@@ -20,6 +20,9 @@ import CategoriaLicenciaForm from "./pages/CategoriasLicencia/CategoriaLicenciaF
 import LicenciasList from "./pages/licencias/LicenciasList.jsx";
 import LicenciaForm from "./pages/licencias/LicenciaForm.jsx";
 
+import SecretariasList from "./pages/secretarias/SecretariasList.jsx";
+import SecretariaForm from "./pages/secretarias/SecretariaForm.jsx";
+
 import MunicipiosList from "./pages/municipios/MunicipiosList.jsx";
 import MunicipioForm from "./pages/municipios/MunicipioForm.jsx";
 
@@ -74,6 +77,11 @@ const App = () => {
           <Route path="/licencias" element={<LicenciasList />} />
           <Route path="/licencias/nuevo" element={<LicenciaForm />} />
           <Route path="/licencias/:id" element={<LicenciaForm />} />
+
+          {/* Secretarias */}
+          <Route path="/secretarias" element={<SecretariasList />} />
+          <Route path="/secretarias/nuevo" element={<SecretariaForm />} />
+          <Route path="/secretarias/:id" element={<SecretariaForm />} />
 
           {/* Municipios */}
           <Route path="/municipios" element={<MunicipiosList />} />

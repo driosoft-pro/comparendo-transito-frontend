@@ -31,7 +31,7 @@ const extractLicencia = (data) => {
   if (data.licencia) return data.licencia;
   if (data.data?.licencia) return data.data.licencia;
   if (data.data) return data.data;
-  return data || {};
+  return data;
 };
 
 export const getLicencias = async (params = {}) => {

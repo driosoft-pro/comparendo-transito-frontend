@@ -2,22 +2,44 @@ import apiClient from "./apiClient.js";
 
 const base = "/municipios";
 
-// Normaliza lista de municipios
+/**
+ * Normaliza listas de municipios.
+ * Soporta:
+ * - [ {...}, {...} ]
+ * - { municipios: [ ... ] }
+ * - { registros: [ ... ] }
+ * - { data: [ ... ] }
+ * - { data: { municipios: [ ... ] } }
+ * - { data: { registros: [ ... ] } }
+ */
 const extractMunicipiosList = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.municipios)) return data.municipios;
+  if (Array.isArray(data?.registros)) return data.registros;
   if (Array.isArray(data?.data?.municipios)) return data.data.municipios;
+  if (Array.isArray(data?.data?.registros)) return data.data.registros;
   if (Array.isArray(data?.data)) return data.data;
   return [];
 };
 
-// Normaliza un municipio
+/**
+ * Normaliza un solo municipio.
+ * Soporta:
+ * - { ...municipio }
+ * - { municipio: { ... } }
+ * - { registro: { ... } }
+ * - { data: { ... } }
+ * - { data: { municipio: { ... } } }
+ * - { data: { registro: { ... } } }
+ */
 const extractMunicipio = (data) => {
   if (!data) return {};
   if (data.municipio) return data.municipio;
+  if (data.registro) return data.registro;
   if (data.data?.municipio) return data.data.municipio;
+  if (data.data?.registro) return data.data.registro;
   if (data.data) return data.data;
-  return data || {};
+  return data;
 };
 
 export const getMunicipios = async (params = {}) => {

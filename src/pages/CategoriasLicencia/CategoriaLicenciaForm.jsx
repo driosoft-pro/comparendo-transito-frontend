@@ -22,44 +22,44 @@ const CategoriaLicenciaForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Cargar categoría en edición
   useEffect(() => {
-    const fetchCategoria = async () => {
-      setErrorMsg("");
+    if (!isEdit) return;
+
+    const loadCategoria = async () => {
       try {
+        setLoading(true);
         const data = await getCategoriaLicenciaById(id);
-        const c = data.categoria || data.categoria_licencia || data;
+
         setForm({
-          codigo: c.codigo || "",
-          descripcion: c.descripcion || "",
+          codigo: data.codigo || "",
+          descripcion: data.descripcion || "",
         });
-      } catch (error) {
-        console.error(error);
-        const msg =
-          error?.response?.data?.message ||
-          "No se pudo cargar la categoría de licencia";
-        setErrorMsg(msg);
+      } catch (err) {
+        console.error(err);
+        setErrorMsg(
+          err?.response?.data?.message ||
+            "No se pudo cargar la categoría de licencia",
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    if (isEdit) {
-      fetchCategoria();
-    }
+    loadCategoria();
   }, [id, isEdit]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
-      [name]: value,
+      [e.target.name]: e.target.value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg("");
     setSubmitting(true);
+    setErrorMsg("");
 
     try {
       const payload = {
@@ -74,38 +74,29 @@ const CategoriaLicenciaForm = () => {
       }
 
       navigate("/categorias-licencia");
-    } catch (error) {
-      console.error(error);
-      const msg =
-        error?.response?.data?.message ||
-        "No se pudo guardar la categoría de licencia";
-      setErrorMsg(msg);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(
+        err?.response?.data?.message ||
+          "No se pudo guardar la categoría de licencia",
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return <p>Cargando categoría...</p>;
-  }
+  if (loading) return <p>Cargando categoría...</p>;
 
   return (
     <div className="max-w-lg space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-          {isEdit
-            ? "Editar categoría de licencia"
-            : "Nueva categoría de licencia"}
-        </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          {isEdit
-            ? "Modifica los datos de la categoría seleccionada."
-            : "Crea una nueva categoría de licencia (A1, A2, B1, C2, etc.)."}
-        </p>
-      </div>
+      <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+        {isEdit
+          ? "Editar categoría de licencia"
+          : "Nueva categoría de licencia"}
+      </h2>
 
       {errorMsg && (
-        <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/50 dark:text-red-200">
+        <div className="rounded bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">
           {errorMsg}
         </div>
       )}
@@ -121,23 +112,22 @@ const CategoriaLicenciaForm = () => {
         />
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Descripción
-          </label>
+          <label className="mb-1 block text-sm">Descripción</label>
           <textarea
             name="descripcion"
             value={form.descripcion}
             onChange={handleChange}
-            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            rows={3}
+            rows="3"
+            className="w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             placeholder="Motocicletas, motociclos y mototriciclos hasta 125 c.c."
           />
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           <Button type="submit" disabled={submitting}>
             {submitting ? "Guardando..." : "Guardar"}
           </Button>
+
           <Button
             type="button"
             variant="outline"

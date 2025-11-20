@@ -7,13 +7,17 @@ const base = "/comparendos";
  * Soporta:
  * - [ {...}, {...} ]
  * - { comparendos: [ ... ] }
+ * - { registros: [ ... ] }
  * - { data: [ ... ] }
  * - { data: { comparendos: [ ... ] } }
+ * - { data: { registros: [ ... ] } }
  */
 const extractComparendosList = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.comparendos)) return data.comparendos;
+  if (Array.isArray(data?.registros)) return data.registros;
   if (Array.isArray(data?.data?.comparendos)) return data.data.comparendos;
+  if (Array.isArray(data?.data?.registros)) return data.data.registros;
   if (Array.isArray(data?.data)) return data.data;
   return [];
 };
@@ -23,13 +27,17 @@ const extractComparendosList = (data) => {
  * Soporta:
  * - { ... }
  * - { comparendo: { ... } }
+ * - { registro: { ... } }
  * - { data: { ... } }
  * - { data: { comparendo: { ... } } }
+ * - { data: { registro: { ... } } }
  */
 const extractComparendoItem = (data) => {
   if (!data) return null;
   if (data.comparendo) return data.comparendo;
+  if (data.registro) return data.registro;
   if (data.data?.comparendo) return data.data.comparendo;
+  if (data.data?.registro) return data.data.registro;
   if (data.data) return data.data;
   return data;
 };

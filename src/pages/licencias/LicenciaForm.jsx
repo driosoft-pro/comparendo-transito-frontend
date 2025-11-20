@@ -9,6 +9,12 @@ import {
 } from "../../services/licenciasService.js";
 import { getUsers } from "../../services/usersService.js";
 import { getCategoriasLicencia } from "../../services/categoriasLicenciaService.js";
+import { getSecretarias } from "../../services/secretariasService.js";
+import {
+  getLicenciasCategoria,
+  createLicenciaCategoria,
+  deleteLicenciaCategoria,
+} from "../../services/licenciaCategoriasService.js";
 
 const LicenciaForm = () => {
   const { id } = useParams();
@@ -22,46 +28,71 @@ const LicenciaForm = () => {
     organismo_transito_expedidor: "",
     estado: "ACTIVA",
     id_persona: "",
-    id_categoria_licencia: "",
   });
 
   const [usuarios, setUsuarios] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [secretarias, setSecretarias] = useState([]);
+
+  const [relaciones, setRelaciones] = useState([]);
+  const [selectedCategoriasIds, setSelectedCategoriasIds] = useState([]);
 
   const [loading, setLoading] = useState(isEdit);
   const [loadingAux, setLoadingAux] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Carga usuarios y categorías (para los selects)
+  // Cargar usuarios, categorías, secretarías y relaciones
   useEffect(() => {
     const fetchAuxData = async () => {
       try {
-        const [usersResp, categoriasResp] = await Promise.all([
-          getUsers(),
-          getCategoriasLicencia(),
-        ]);
+        setLoadingAux(true);
 
-        const usuariosList = usersResp.usuarios || usersResp || [];
-        setUsuarios(usuariosList || []);
+        const [usersResp, categoriasResp, secretariasResp, relResp] =
+          await Promise.all([
+            getUsers(),
+            getCategoriasLicencia(),
+            getSecretarias(),
+            getLicenciasCategoria(),
+          ]);
+
+        setUsuarios(usersResp?.usuarios || usersResp || []);
         setCategorias(categoriasResp || []);
+        setSecretarias(secretariasResp || []);
+
+        if (isEdit && relResp) {
+          const allRel = relResp || [];
+          const relForLic = allRel.filter(
+            (r) => Number(r.id_licencia_conduccion) === Number(id),
+          );
+          setRelaciones(relForLic);
+          setSelectedCategoriasIds(
+            relForLic.map((r) => String(r.id_categoria_licencia)),
+          );
+        }
       } catch (error) {
-        console.error("Error cargando usuarios/categorías:", error);
+        console.error("Error cargando catálogos:", error);
       } finally {
         setLoadingAux(false);
       }
     };
 
     fetchAuxData();
-  }, []);
+  }, [id, isEdit]);
 
-  // Carga la licencia si estamos en modo edición
+  // Cargar licencia si es edición
   useEffect(() => {
+    if (!isEdit) {
+      setLoading(false);
+      return;
+    }
+
     const fetchLicencia = async () => {
       setErrorMsg("");
       try {
         const data = await getLicenciaById(id);
         const l = data.licencia || data;
+
         setForm({
           numero_licencia: l.numero_licencia || "",
           fecha_expedicion: l.fecha_expedicion || "",
@@ -69,7 +100,6 @@ const LicenciaForm = () => {
           organismo_transito_expedidor: l.organismo_transito_expedidor || "",
           estado: l.estado || "ACTIVA",
           id_persona: l.id_persona ?? "",
-          id_categoria_licencia: l.id_categoria_licencia ?? "",
         });
       } catch (error) {
         console.error(error);
@@ -81,42 +111,102 @@ const LicenciaForm = () => {
       }
     };
 
-    if (isEdit) {
-      fetchLicencia();
-    }
+    fetchLicencia();
   }, [id, isEdit]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === "id_persona") {
+      setForm((prev) => ({
+        ...prev,
+        [name]: value ? Number(value) : "",
+      }));
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
-      [name]:
-        name === "id_persona" || name === "id_categoria_licencia"
-          ? Number(value) || ""
-          : value,
+      [name]: value,
     }));
+  };
+
+  const handleCategoriasChange = (e) => {
+    const selected = Array.from(e.target.selectedOptions).map(
+      (opt) => opt.value,
+    );
+    setSelectedCategoriasIds(selected);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg("");
     setSubmitting(true);
+    setErrorMsg("");
 
     try {
-      const payload = {
+      const payloadLicencia = {
         numero_licencia: form.numero_licencia,
         fecha_expedicion: form.fecha_expedicion,
         fecha_vencimiento: form.fecha_vencimiento,
         organismo_transito_expedidor: form.organismo_transito_expedidor,
         estado: form.estado,
         id_persona: form.id_persona || null,
-        id_categoria_licencia: form.id_categoria_licencia || null,
       };
 
+      let idLicencia;
+
       if (isEdit) {
-        await updateLicencia(id, payload);
+        const updated = await updateLicencia(id, payloadLicencia);
+        idLicencia =
+          updated.id_licencia || updated.id_licencia_conduccion || Number(id);
+
+        const seleccionadasNum = selectedCategoriasIds.map((v) => Number(v));
+        const existentesNum = relaciones.map((r) =>
+          Number(r.id_categoria_licencia),
+        );
+
+        const toDelete = relaciones.filter(
+          (r) => !seleccionadasNum.includes(Number(r.id_categoria_licencia)),
+        );
+        await Promise.all(
+          toDelete.map((r) => deleteLicenciaCategoria(r.id_licencia_categoria)),
+        );
+
+        const toCreate = seleccionadasNum.filter(
+          (catId) => !existentesNum.includes(catId),
+        );
+        const today = new Date().toISOString().slice(0, 10);
+
+        await Promise.all(
+          toCreate.map((catId) =>
+            createLicenciaCategoria({
+              id_licencia_conduccion: idLicencia,
+              id_categoria_licencia: catId,
+              fecha_asignacion: today,
+            }),
+          ),
+        );
       } else {
-        await createLicencia(payload);
+        const creada = await createLicencia(payloadLicencia);
+        idLicencia =
+          creada.id_licencia || creada.id_licencia_conduccion || null;
+
+        if (!idLicencia) {
+          throw new Error("No se obtuvo el id de la licencia creada");
+        }
+
+        const seleccionadasNum = selectedCategoriasIds.map((v) => Number(v));
+        const today = new Date().toISOString().slice(0, 10);
+
+        await Promise.all(
+          seleccionadasNum.map((catId) =>
+            createLicenciaCategoria({
+              id_licencia_conduccion: idLicencia,
+              id_categoria_licencia: catId,
+              fecha_asignacion: today,
+            }),
+          ),
+        );
       }
 
       navigate("/licencias");
@@ -172,8 +262,8 @@ const LicenciaForm = () => {
               name="fecha_expedicion"
               value={form.fecha_expedicion}
               onChange={handleChange}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               required
+              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
           </div>
           <div>
@@ -185,19 +275,32 @@ const LicenciaForm = () => {
               name="fecha_vencimiento"
               value={form.fecha_vencimiento}
               onChange={handleChange}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               required
+              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
           </div>
         </div>
 
-        <Input
-          label="Organismo de tránsito expedidor"
-          name="organismo_transito_expedidor"
-          value={form.organismo_transito_expedidor}
-          onChange={handleChange}
-          required
-        />
+        {/* Organismo = Secretarías */}
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Organismo de tránsito expedidor
+          </label>
+          <select
+            name="organismo_transito_expedidor"
+            value={form.organismo_transito_expedidor}
+            onChange={handleChange}
+            required
+            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value="">Seleccione una secretaría...</option>
+            {secretarias.map((s) => (
+              <option key={s.id_secretaria} value={s.nombre_secretaria}>
+                {s.nombre_secretaria}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Estado */}
@@ -217,10 +320,10 @@ const LicenciaForm = () => {
             </select>
           </div>
 
-          {/* Usuario (nombre, no ID) */}
+          {/* Persona */}
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Usuario
+              Persona (usuario)
             </label>
             <select
               name="id_persona"
@@ -229,7 +332,7 @@ const LicenciaForm = () => {
               required
               className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             >
-              <option value="">Seleccione un usuario...</option>
+              <option value="">Seleccione una persona...</option>
               {usuarios.map((u) => (
                 <option key={u.id_usuario} value={u.id_usuario}>
                   {u.username}
@@ -239,25 +342,23 @@ const LicenciaForm = () => {
           </div>
         </div>
 
-        {/* Categoría de licencia (por código) */}
+        {/* Categorías (multi) */}
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Categoría de licencia
+            Categorías de licencia
           </label>
+          <p className="mb-1 text-[11px] text-slate-500 dark:text-slate-400">
+            Usa Ctrl/Cmd para seleccionar varias categorías si aplica.
+          </p>
           <select
-            name="id_categoria_licencia"
-            value={form.id_categoria_licencia}
-            onChange={handleChange}
-            required
-            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            multiple
+            value={selectedCategoriasIds}
+            onChange={handleCategoriasChange}
+            className="block max-h-40 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           >
-            <option value="">Seleccione una categoría...</option>
             {categorias.map((c) => (
-              <option
-                key={c.id_categoria_licencia}
-                value={c.id_categoria_licencia}
-              >
-                {c.codigo_categoria || c.codigo || c.nombre}
+              <option key={c.id_categoria} value={c.id_categoria}>
+                {c.codigo} - {c.descripcion}
               </option>
             ))}
           </select>
