@@ -82,7 +82,7 @@ const UsersList = () => {
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div className="relative">
           <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400 text-sm">
-            <span></span>
+            <span>🔍</span>
           </span>
           <input
             type="text"

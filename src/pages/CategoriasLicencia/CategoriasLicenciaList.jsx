@@ -101,7 +101,7 @@ const CategoriasLicenciaList = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-8 py-2 text-sm focus:border-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
           />
-          <span className="absolute left-3 top-2 text-slate-400"></span>
+          <span className="absolute left-3 top-2 text-slate-400">🔍</span>
         </div>
       </div>
 
